@@ -6,7 +6,7 @@ import net.sf.json.JSONObject
 
 System.setProperty("hudson.model.DirectoryBrowserSupport.CSP", "")
 
-def jobDslScript = '''
+/*def jobDslScript = '''
 pipelineJob("smoke-tests") {
     displayName("Playwright Smoke Tests")
     description("Runs Playwright smoke tests against well-known public URLs. Artifacts: HTML report + traces/screenshots.")

@@ -17,7 +17,6 @@ jenkins:
     loggedInUsersCanDoAnything:
       allowAnonymousRead: false
 
-  # Make the built-in node available for running jobs
   nodes: []
 
 unclassified:
@@ -31,12 +30,33 @@ unclassified:
   ansiColorBuildWrapper:
     globalColorMapName: "xterm"
 
-  # Allow Job DSL to run unapproved scripts during bootstrap
-  #globalJobDslSecurityConfiguration:
-    #useScriptSecurity: false
-
 tool:
   git:
     installations:
       - name: "Default"
         home: "git"
+
+jobs:
+  - script: >
+      pipelineJob('smoke-tests') {
+        displayName('🔥 Playwright Smoke Tests')
+        description('Job generado automáticamente vía JCasC. Ejecuta tests de Playwright desde GitHub.')
+        
+        logRotator {
+          numToKeep(10)
+        }
+
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote { 
+                  url('https://github.com/fcojvr/Test-Arsys.git') 
+                }
+                branch('main')
+              }
+            }
+            scriptPath('Jenkinsfile')
+          }
+        }
+      }
