@@ -1,36 +1,35 @@
-# Jenkins LTS with pre-installed plugins and Docker CLI
+# 1. Base
 FROM jenkins/jenkins:2.492.1-lts-jdk17
 
 USER root
 
-# Install Docker CLI so Jenkins can run docker commands on the host socket
+# 2. Instalación de Docker CLI
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        ca-certificates \
-        curl \
-        gnupg \
-        lsb-release && \
+        ca-certificates curl gnupg lsb-release && \
     install -m 0755 -d /etc/apt/keyrings && \
     curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
     chmod a+r /etc/apt/keyrings/docker.gpg && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-         https://download.docker.com/linux/debian $(lsb_release -cs) stable" \
-         > /etc/apt/sources.list.d/docker.list && \
+          https://download.docker.com/linux/debian $(lsb_release -cs) stable" \
+          > /etc/apt/sources.list.d/docker.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends docker-ce-cli && \
     rm -rf /var/lib/apt/lists/*
 
-USER jenkins
-
-# Skip the setup wizard
-ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
-
-# Install plugins via the Plugin Installation Manager
+# 3. Instalación de Plugins (Solo una vez)
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 
-# Copy JCasC configuration
-COPY casc/jenkins.yaml /var/jenkins_home/casc.yaml
+# 4. Configuración JCasC e Init Scripts (A la carpeta de REFERENCIA)
+COPY casc/jenkins.yaml /usr/share/jenkins/ref/casc.yaml
+RUN mkdir -p /usr/share/jenkins/ref/init.groovy.d
+COPY init.groovy.d/create-jobs.groovy /usr/share/jenkins/ref/init.groovy.d/create-jobs.groovy
 
-# Copy Job DSL seed script
-COPY init.groovy.d/create-jobs.groovy /var/jenkins_home/init.groovy.d/create-jobs.groovy
+# 5. Permisos
+RUN chown -R jenkins:jenkins /usr/share/jenkins/ref/
+
+# 6. Usuario y Variables
+USER jenkins
+ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
+ENV CASC_JENKINS_CONFIG="/usr/share/jenkins/ref/casc.yaml"

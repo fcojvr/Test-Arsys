@@ -1,14 +1,9 @@
-# Jenkins Configuration as Code (JCasC)
-# Fully declarative — no click-ops required.
-
 jenkins:
   systemMessage: "🚀 Playwright Smoke CI — configured via JCasC"
   numExecutors: 4
   mode: NORMAL
   scmCheckoutRetryCount: 2
 
-  # Local agent (built-in node) runs the pipeline steps inside the
-  # 'playwright' Docker container via docker exec.
   agentProtocols:
     - "JNLP4-connect"
 

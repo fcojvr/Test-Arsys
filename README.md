@@ -1,241 +1,125 @@
-# Playwright Smoke CI
+# Playwright & Jenkins CI/CD Challenge - Arsys
 
-A **one-command local CI environment** using Docker Compose, Jenkins (configured via JCasC + Job DSL), and Playwright (TypeScript).
+Este repositorio contiene una solución completa de **Infraestructura como Código (IaC)** para desplegar un entorno local de **Integración Continua**. Utiliza **Docker Compose** para orquestar un servidor **Jenkins** preconfigurado que ejecuta una suite de **Smoke Tests** con **Playwright**.
 
 ---
 
-## Quick Start
+## 🛠️ Arquitectura y decisiones técnicas
+
+A diferencia de una instalación manual, este entorno ha sido diseñado para ser **Plug & Play** mediante las siguientes estrategias:
+
+- **Ref-Dir Strategy (solución al Error 5):**  
+  Se corrigió la persistencia de datos moviendo la configuración inicial (`jenkins.yaml` y scripts Groovy) a `/usr/share/jenkins/ref/`. Esto asegura que Jenkins inicialice el volumen correctamente sin colisiones de permisos en el host.
+
+- **Docker-out-of-Docker (DooD):**  
+  El contenedor de Jenkins incluye el Docker CLI y accede al socket del host (`/var/run/docker.sock`). Esto permite que Jenkins levante y gestione el contenedor de Playwright de forma independiente.
+
+- **Zero Click-Ops:**  
+  Mediante **JCasC (Jenkins Configuration as Code)** y **Job DSL**, el usuario administrador, los plugins y el job de pruebas se crean automáticamente al arrancar.
+
+---
+
+## 🚀 Guía de inicio rápido
+
+### 1. Requisitos
+
+| Herramienta       | Versión mínima |
+|------------------|----------------|
+| Docker Engine    | 24+            |
+| Docker Compose   | v2.x           |
+| Puertos libres   | 8080, 50000    |
+
+### 2. Despliegue
+
+Para asegurar una instalación limpia, ejecuta los siguientes comandos en la raíz del proyecto:
 
 ```bash
-# 1. Clone and enter the repository
-git clone <repo-url> playwright-jenkins-ci
-cd playwright-jenkins-ci
-
-# 2. Start everything
-docker compose up -d --build
-
-# 3. Open Jenkins
-open http://localhost:8080          # macOS
-xdg-open http://localhost:8080      # Linux
-# Credentials → admin / admin
-```
-
-> First boot takes ~3–5 minutes while Jenkins downloads plugins and browsers are installed on first job run.
-
----
-
-## Prerequisites
-
-| Tool | Minimum version |
-|------|----------------|
-| Docker Engine | 24+ |
-| Docker Compose plugin | v2.x (`docker compose`) |
-| Free ports | 8080, 50000 |
-
----
-
-## How to Start / Reset the Environment
-
-### Start
-
-```bash
+# Limpiar volúmenes previos y construir imágenes
+docker compose down -v
 docker compose up -d --build
 ```
 
-### Stop (keep data)
+### 3. Acceso a Jenkins
+
+Una vez que el contenedor esté corriendo, puedes acceder a la interfaz web. Jenkins puede tardar un par de minutos en inicializarse completamente mientras instala los plugins necesarios.
+
+| Parámetro   | Valor por defecto    |
+|------------|----------------------|
+| URL        | http://localhost:8080 |
+| Usuario    | admin                |
+| Contraseña | admin                |
+
+> **Nota sobre la contraseña:**  
+> Si por alguna razón la configuración de JCasC no aplicara el usuario por defecto, puedes obtener la contraseña inicial generada ejecutando:
 
 ```bash
-docker compose down
-# or
-make down
-```
-
-### Full reset — destroy all data and rebuild from scratch
-
-```bash
-docker compose down -v --remove-orphans
-docker compose up -d --build
-# or
-make reset
-```
-
-> `--remove-orphans` cleans up stale containers. `-v` deletes the named volumes (Jenkins home, Playwright results).
-
----
-
-## How to Run the Smoke Job
-
-### Via Jenkins UI
-
-1. Navigate to **http://localhost:8080**
-2. Log in with `admin` / `admin`
-3. Click **🔥 Playwright Smoke Tests**
-4. Click **Build Now** (or **Build with Parameters** to override URLs)
-5. Watch the build — results appear in the **Playwright Report** tab and the JUnit badge
-
-### Via CLI (curl)
-
-```bash
-# Trigger with default URLs
-curl -X POST http://admin:admin@localhost:8080/job/smoke-tests/build
-
-# Trigger with URL overrides
-curl -X POST \
-  "http://admin:admin@localhost:8080/job/smoke-tests/buildWithParameters" \
-  --data-urlencode "TARGET_URLS=https://example.com,https://httpbin.org/get"
-```
-
-### Directly on the Playwright container (no Jenkins)
-
-```bash
-docker compose exec playwright npx playwright test
-# View the HTML report
-docker compose exec playwright npx playwright show-report
+docker compose logs jenkins | grep -A 5 "initial setup is required"
 ```
 
 ---
 
-## How to Change the Target URLs
+## 🧪 Ejecución de pruebas (Smoke Tests)
 
-### Option 1 — Permanent (recommended): edit `playwright.config.ts`
+El job **`Playwright-Smoke-Tests`** está configurado para ejecutarse en un agente especializado utilizando la imagen oficial de Playwright.
 
-```typescript
-// playwright-tests/playwright.config.ts
-const DEFAULT_URLS: string[] = [
-  "https://www.wikipedia.org",
-  "https://your-new-url.example.com",   // ← add / remove here
-  // …
-];
-```
+### Escenarios incluidos
 
-After editing, rebuild the Playwright image:
+- **Validación de conectividad:**  
+  Tests sobre URLs públicas como "https://nodejs.org" y "https://www.typescriptlang.org/" para asegurar salida a red.
 
-```bash
-docker compose build playwright
-docker compose up -d playwright
-```
+- **API Smoke Tests:**  
+  Pruebas de integración contra `httpbin.org`.
 
-### Option 2 — At runtime (no rebuild needed): Jenkins parameter
-
-When triggering **Build with Parameters**, fill in the **TARGET_URLS** field:
-
-```
-https://example.com,https://httpbin.org/get,https://jsonplaceholder.typicode.com/todos/1
-```
-
-The config file value is ignored when this parameter is non-empty.
-
-### Option 3 — Environment variable
-
-```bash
-TARGET_URLS="https://example.com,https://httpbin.org/get" \
-  docker compose exec playwright npx playwright test
-```
+- **Simulación de fallos:**  
+  Escenarios de errores `400` configurados intencionalmente para validar la robustez del reporte y la captura de artefactos (`screenshots` y `traces`).
 
 ---
 
-## Artifacts & Debugging
+## 📊 Reportes y artefactos
 
-Each Jenkins build produces:
+Tras cada ejecución, Jenkins procesa los resultados automáticamente:
 
-| Artifact | Location in Jenkins | Contents |
-|----------|--------------------|-----------------------|
-| Playwright HTML Report | **Playwright Report** tab | Full test run with timings, retries |
-| JUnit XML | **Test Results** badge | Pass/fail counts, trends |
-| Screenshots | **test-results/** archive | Only captured on failure |
-| Traces | **test-results/** archive | `.zip` openable with `playwright show-trace` |
+- **Playwright HTML Report:**  
+  Visualización interactiva accesible desde el menú lateral del job.
 
-To open a trace locally:
-
-```bash
-# Download the .zip from Jenkins artifacts, then:
-npx playwright show-trace path/to/trace.zip
-```
+- **Traces & Screenshots:**  
+  Se capturan solo en caso de fallo para optimizar el almacenamiento, permitiendo un debugging visual rápido desde los artefactos del build.
 
 ---
 
-## Project Structure
+## 📂 Estructura del repositorio
 
-```
-playwright-jenkins-ci/
-├── docker-compose.yml          # Single-command bootstrap
-├── Jenkinsfile                 # Pipeline reference (also seeded via Job DSL)
-├── Makefile                    # Convenience wrappers
-│
+```plaintext
+.
 ├── jenkins/
-│   ├── Dockerfile              # Jenkins LTS + plugins + Docker CLI
-│   ├── plugins.txt             # Pinned plugin list for jenkins-plugin-cli
-│   ├── casc/
-│   │   └── jenkins.yaml        # JCasC — full Jenkins config (no click-ops)
-│   └── init.groovy.d/
-│       └── create-jobs.groovy  # Job DSL seed — creates smoke-tests pipeline
-│
-└── playwright-tests/
-    ├── Dockerfile              # mcr.microsoft.com/playwright base image
-    ├── package.json
-    ├── tsconfig.json
-    ├── playwright.config.ts    # Config + URL list + reporters
-    └── tests/
-        ├── smoke.spec.ts       # Browser smoke tests (6 public URLs)
-        └── api-smoke.spec.ts   # API-level smoke tests (no browser, fast)
+│   ├── Dockerfile         # Jenkins LTS + Docker CLI + Plugins
+│   ├── plugins.txt        # Lista de plugins (Git, Pipeline, HTML Publisher)
+│   ├── casc/              # Configuración YAML de Jenkins (JCasC)
+│   └── init.groovy.d/     # Scripts Groovy para auto-creación de jobs
+├── playwright-tests/
+│   ├── tests/             # Specs de Playwright (TypeScript)
+│   └── playwright.config.ts
+└── docker-compose.yml     # Orquestador principal de servicios
 ```
 
 ---
 
-## Key Design Decisions & Tradeoffs
+## 📝 Notas de desarrollo
 
-### 1. Separate `playwright` container
+- **Persistencia:**  
+  Para reiniciar la configuración de fábrica, es necesario usar:
 
-**Decision:** Playwright runs in its own container (`mcr.microsoft.com/playwright`) rather than inside Jenkins.
+```bash
+docker compose down -v
+```
 
-**Why:** The official Playwright image bundles all browser dependencies (libnss, libgbm, etc.) in the right versions. Installing browsers inside a Jenkins JDK image is brittle and bloats it. Keeping concerns separate also makes it easy to update Playwright independently.
+Esto eliminará los volúmenes de Jenkins.
 
-**Tradeoff:** Jenkins executes pipeline steps via `docker exec` into the container rather than using a Jenkins agent. This is simpler for a single-node setup but would need to be replaced with a proper Jenkins agent or Kubernetes pod for multi-node CI.
+- **Tiempo de inicio:**  
+  El sistema estará listo cuando el log muestre:
 
----
-
-### 2. JCasC + Job DSL (zero click-ops)
-
-**Decision:** Jenkins configuration is expressed entirely in `jenkins.yaml` (JCasC) and `create-jobs.groovy` (Job DSL). No manual configuration steps are needed.
-
-**Why:** Manual click-through configuration is not reproducible or reviewable. JCasC/Job DSL make the setup auditable in git and idempotent on restart.
-
-**Tradeoff:** The Groovy Job DSL seed script runs at startup; on the very first boot Jenkins may not have fully loaded all plugins yet. A `sleep 5000` guard in the init script handles the race condition pragmatically. A production setup would use a dedicated seed job or the Configuration as Code plugin's `jobs` block instead.
+```text
+Jenkins is fully up and running
+```
 
 ---
-
-### 3. Dynamic URL list via environment variable
-
-**Decision:** `TARGET_URLS` is an env var / Jenkins parameter that overrides the hardcoded defaults in `playwright.config.ts`.
-
-**Why:** Lets operators run ad-hoc checks against staging or a new domain without touching code or redeploying the image.
-
-**Tradeoff:** The override mechanism is a single flat comma-separated string — simple but not strongly typed. A proper solution would use a JSON file or a dedicated config service.
-
----
-
-### 4. No retries, no parallelism across browsers
-
-**Decision:** `retries: 0`, Chromium-only, `workers: 4`.
-
-**Why:** Smoke tests should be reliable enough to pass on the first run. Retries mask flakiness. Adding Firefox/WebKit would triple run time with little benefit for "is the site up?" checks.
-
-**Tradeoff:** A genuine flaky network or DNS issue will cause a failure. Accept this — it's the right signal for a smoke suite.
-
----
-
-### 5. Artifacts: HTML report + traces/screenshots on failure only
-
-**Decision:** Videos are off; screenshots and traces are captured only on failure.
-
-**Why:** Videos are large and rarely needed for smoke failures. Traces + screenshots give enough context (full DOM snapshot, network log, console errors) without bloating every build's artifacts.
-
----
-
-## Credentials
-
-| Service | Username | Password |
-|---------|----------|----------|
-| Jenkins | `admin` | `admin` |
-
-> These are intentionally simple for local development. Change them in `jenkins/casc/jenkins.yaml` before exposing Jenkins on a network.
