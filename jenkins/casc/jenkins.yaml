@@ -4,15 +4,11 @@ jenkins:
   mode: NORMAL
   scmCheckoutRetryCount: 2
 
-  agentProtocols:
-    - "JNLP4-connect"
-
   securityRealm:
     local:
-      allowsSignup: false
       users:
         - id: "admin"
-          password: "admin"
+          password: ${ADMIN_PWD}
           properties:
             - mailer:
                 emailAddress: "admin@localhost"
@@ -36,8 +32,8 @@ unclassified:
     globalColorMapName: "xterm"
 
   # Allow Job DSL to run unapproved scripts during bootstrap
-  globalJobDslSecurityConfiguration:
-    useScriptSecurity: false
+  #globalJobDslSecurityConfiguration:
+    #useScriptSecurity: false
 
 tool:
   git:

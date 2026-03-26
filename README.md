@@ -8,9 +8,6 @@ Este repositorio contiene una solución completa de **Infraestructura como Códi
 
 A diferencia de una instalación manual, este entorno ha sido diseñado para ser **Plug & Play** mediante las siguientes estrategias:
 
-- **Ref-Dir Strategy (solución al Error 5):**  
-  Se corrigió la persistencia de datos moviendo la configuración inicial (`jenkins.yaml` y scripts Groovy) a `/usr/share/jenkins/ref/`. Esto asegura que Jenkins inicialice el volumen correctamente sin colisiones de permisos en el host.
-
 - **Docker-out-of-Docker (DooD):**  
   El contenedor de Jenkins incluye el Docker CLI y accede al socket del host (`/var/run/docker.sock`). Esto permite que Jenkins levante y gestione el contenedor de Playwright de forma independiente.
 
@@ -33,11 +30,11 @@ A diferencia de una instalación manual, este entorno ha sido diseñado para ser
 
 Para asegurar una instalación limpia, ejecuta los siguientes comandos en la raíz del proyecto:
 
-```bash
-# Limpiar volúmenes previos y construir imágenes
-docker compose down -v
+git clone <tu-repo-url>
+cd <nombre-carpeta>
+
+# Levantar la infraestructura
 docker compose up -d --build
-```
 
 ### 3. Acceso a Jenkins
 
@@ -49,14 +46,7 @@ Una vez que el contenedor esté corriendo, puedes acceder a la interfaz web. Jen
 | Usuario    | admin                |
 | Contraseña | admin                |
 
-> **Nota sobre la contraseña:**  
-> Si por alguna razón la configuración de JCasC no aplicara el usuario por defecto, puedes obtener la contraseña inicial generada ejecutando:
 
-```bash
-docker compose logs jenkins | grep -A 5 "initial setup is required"
-```
-
----
 
 ## 🧪 Ejecución de pruebas (Smoke Tests)
 
