@@ -58,6 +58,7 @@ pipeline {
             }
         }
     } 
+}         
 
     post {
         success { echo "✅ All smoke tests passed." }

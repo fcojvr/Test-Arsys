@@ -1,4 +1,8 @@
 # Core
+docker-workflow:latest
+docker-commons:latest
+authentication-tokens:latest
+docker-plugin:latest
 configuration-as-code:latest
 job-dsl:latest
 workflow-aggregator:latest
