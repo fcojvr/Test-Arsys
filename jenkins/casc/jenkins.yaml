@@ -1,0 +1,51 @@
+# Jenkins Configuration as Code (JCasC)
+# Fully declarative — no click-ops required.
+
+jenkins:
+  systemMessage: "🚀 Playwright Smoke CI — configured via JCasC"
+  numExecutors: 4
+  mode: NORMAL
+  scmCheckoutRetryCount: 2
+
+  # Local agent (built-in node) runs the pipeline steps inside the
+  # 'playwright' Docker container via docker exec.
+  agentProtocols:
+    - "JNLP4-connect"
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "admin"
+          properties:
+            - mailer:
+                emailAddress: "admin@localhost"
+
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+  # Make the built-in node available for running jobs
+  nodes: []
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+    adminAddress: "admin@localhost"
+
+  timestamper:
+    allPipelines: true
+
+  ansiColorBuildWrapper:
+    globalColorMapName: "xterm"
+
+  # Allow Job DSL to run unapproved scripts during bootstrap
+  globalJobDslSecurityConfiguration:
+    useScriptSecurity: false
+
+tool:
+  git:
+    installations:
+      - name: "Default"
+        home: "git"

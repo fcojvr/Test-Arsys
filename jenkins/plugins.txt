@@ -1,0 +1,18 @@
+# Core
+configuration-as-code:latest
+job-dsl:latest
+workflow-aggregator:latest
+git:latest
+pipeline-stage-view:latest
+
+# Artifact / reporting
+htmlpublisher:latest
+junit:latest
+
+# UI & UX
+blueocean:latest
+ant:latest
+
+# Utility
+timestamper:latest
+ansicolor:latest
