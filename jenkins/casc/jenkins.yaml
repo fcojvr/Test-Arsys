@@ -6,9 +6,10 @@ jenkins:
 
   securityRealm:
     local:
+      allowsSignup: false
       users:
         - id: "admin"
-          password: ${ADMIN_PWD}
+          password: "admin"
           properties:
             - mailer:
                 emailAddress: "admin@localhost"
@@ -18,6 +19,11 @@ jenkins:
       allowAnonymousRead: false
 
   nodes: []
+
+# ─── CRÍTICO: sin esto Job DSL rechaza el script al ejecutarse ───────────────
+security:
+  globalJobDslSecurityConfiguration:
+    useScriptSecurity: false
 
 unclassified:
   location:

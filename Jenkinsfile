@@ -39,27 +39,32 @@ pipeline {
                 sh """
                     cd playwright-tests
                     export TARGET_URLS="${params.TARGET_URLS}"
-                    npx playwright test --reporter=html --output=test-results
+                    npx playwright test \
+                        --reporter=html \
+                        --output=test-results
                 """
             }
+            // ✅ post va DENTRO del stage, pero FUERA de steps
+post {
+    always {
+        publishHTML(target: [
+            allowMissing         : true,
+            alwaysLinkToLastBuild: true,
+            keepAll              : true,
+            reportDir            : "playwright-tests/playwright-report",
+            reportFiles          : "index.html",
+            reportName           : "Playwright Report"
+        ])
 
-        post {
-            always {
-                publishHTML(target: [
-                    allowMissing         : true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll              : true,
-                    reportDir            : "playwright-tests/playwright-report", 
-                    reportFiles          : "index.html",
-                    reportName           : "Playwright Report"
-                ])
-            }
-        }
-    } 
-}         
-
+        archiveArtifacts(
+            artifacts: "playwright-tests/test-results/**",
+            allowEmptyArchive: true,
+            fingerprint: true
+        )
+    }
+}
     post {
         success { echo "✅ All smoke tests passed." }
         failure { echo "❌ One or more smoke tests failed — check the Playwright report." }
     }
-} 
+}
