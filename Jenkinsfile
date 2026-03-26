@@ -1,14 +1,10 @@
-/**
- * Jenkinsfile (Declarative Pipeline)
- *
- * This file serves as a reference / portable definition of the smoke-tests
- * pipeline. The authoritative definition is seeded automatically via Job DSL
- * (jenkins/init.groovy.d/create-jobs.groovy) so no manual configuration is
- * needed. This file is checked in for documentation and portability.
- */
-
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'mcr.microsoft.com/playwright:v1.44.0-jammy'
+            args '-u root'
+        }
+    }
 
     options {
         timestamps()
@@ -26,23 +22,22 @@ pipeline {
     }
 
     stages {
-
         stage("Install dependencies") {
             steps {
-                sh "cd /app && npm ci --prefer-offline"
+                // Quitamos el cd /app, Jenkins ya está en la carpeta del código
+                sh "npm ci --prefer-offline"
             }
         }
 
         stage("Install Playwright browsers") {
             steps {
-                sh "cd /app && npx playwright install --with-deps chromium"
+                sh "npx playwright install --with-deps chromium"
             }
         }
 
         stage("Run smoke tests") {
             steps {
                 sh """
-                    cd /app
                     export TARGET_URLS="${params.TARGET_URLS}"
                     npx playwright test \
                         --reporter=html,junit \
@@ -51,14 +46,15 @@ pipeline {
             }
             post {
                 always {
+                    // Corregimos las rutas de los reportes para que apunten a la raíz del workspace
                     junit allowEmptyResults: true,
-                          testResults: "/app/test-results/junit*.xml"
+                          testResults: "test-results/*.xml"
 
                     publishHTML(target: [
                         allowMissing         : true,
                         alwaysLinkToLastBuild: true,
-                        keepAll              : true,
-                        reportDir            : "/app/playwright-report",
+                        keepAll               : true,
+                        reportDir            : "playwright-report",
                         reportFiles          : "index.html",
                         reportName           : "Playwright Report",
                         reportTitles         : "Smoke Test Report"
