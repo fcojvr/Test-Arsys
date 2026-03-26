@@ -44,33 +44,23 @@ pipeline {
                         --output=test-results
                 """
             }
-            post {
-                always {
-                    junit allowEmptyResults: true,
-                          testResults: "playwright-tests/test-results/*.xml"
 
-                    publishHTML(target: [
-                        allowMissing         : true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll               : true,
-                        reportDir            : "playwright-tests/playwright-report",
-                        reportFiles          : "index.html",
-                        reportName           : "Playwright Report",
-                        reportTitles         : "Smoke Test Report"
-                    ])
-
-                    archiveArtifacts(
-                        artifacts: "test-results/**",
-                        allowEmptyArchive: true,
-                        fingerprint: true
-                    )
-                }
+        post {
+            always {
+                publishHTML(target: [
+                    allowMissing         : true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll              : true,
+                    reportDir            : "playwright-report", 
+                    reportFiles          : "index.html",
+                    reportName           : "Playwright Report"
+                ])
             }
         }
-    }
+    } 
 
     post {
         success { echo "✅ All smoke tests passed." }
         failure { echo "❌ One or more smoke tests failed — check the Playwright report." }
     }
-}
+} 
