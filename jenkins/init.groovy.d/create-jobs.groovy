@@ -6,6 +6,9 @@ import jenkins.model.Jenkins
 import hudson.model.*
 import javaposse.jobdsl.plugin.*
 import javaposse.jobdsl.dsl.*
+import net.sf.json.JSONObject
+
+System.setProperty("hudson.model.DirectoryBrowserSupport.CSP", "")
 
 def jobDslScript = '''
 pipelineJob("smoke-tests") {
