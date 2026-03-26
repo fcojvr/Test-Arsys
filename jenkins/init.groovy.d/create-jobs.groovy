@@ -43,10 +43,8 @@ Thread.start {
         try {
             def jenkins = Jenkins.get()
 
-            // Ensure Job DSL plugin class is available
             Class.forName('javaposse.jobdsl.plugin.JenkinsJobManagement')
 
-            // Ensure plugin is active
             def jobDslPlugin = jenkins.pluginManager.getPlugin('job-dsl')
             if (jobDslPlugin == null || !jobDslPlugin.isActive()) {
                 println "[init.groovy] Attempt ${attempt}/${maxAttempts}: job-dsl plugin not active yet, waiting 5s..."

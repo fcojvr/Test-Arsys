@@ -22,7 +22,7 @@ RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 RUN mkdir -p /var/jenkins_home/casc_configs
 COPY casc/jenkins.yaml /var/jenkins_home/casc_configs/jenkins.yaml
 
-COPY --chown=jenkins:jenkins init.groovy.d/ /usr/share/jenkins/ref/init.groovy.d/
+COPY --chown=jenkins:jenkins init.groovy.d/create-jobs.groovy /var/jenkins_home/init.groovy.d/create-jobs.groovy
 
 RUN chown -R jenkins:jenkins /var/jenkins_home/casc_configs /usr/share/jenkins/ref/
 
