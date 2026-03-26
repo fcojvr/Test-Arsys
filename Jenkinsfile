@@ -24,20 +24,20 @@ pipeline {
     stages {
         stage("Install dependencies") {
             steps {
-                // Quitamos el cd /app, Jenkins ya está en la carpeta del código
-                sh "npm ci --prefer-offline"
+                sh "cd playwright-tests && npm ci --prefer-offline"
             }
         }
 
         stage("Install Playwright browsers") {
             steps {
-                sh "npx playwright install --with-deps chromium"
+                sh "cd playwright-tests && npx playwright install --with-deps chromium"
             }
         }
 
         stage("Run smoke tests") {
             steps {
                 sh """
+                    cd playwright-tests
                     export TARGET_URLS="${params.TARGET_URLS}"
                     npx playwright test \
                         --reporter=html,junit \
@@ -46,15 +46,14 @@ pipeline {
             }
             post {
                 always {
-                    // Corregimos las rutas de los reportes para que apunten a la raíz del workspace
                     junit allowEmptyResults: true,
-                          testResults: "test-results/*.xml"
+                          testResults: "playwright-tests/test-results/*.xml"
 
                     publishHTML(target: [
                         allowMissing         : true,
                         alwaysLinkToLastBuild: true,
                         keepAll               : true,
-                        reportDir            : "playwright-report",
+                        reportDir            : "playwright-tests/playwright-report",
                         reportFiles          : "index.html",
                         reportName           : "Playwright Report",
                         reportTitles         : "Smoke Test Report"
