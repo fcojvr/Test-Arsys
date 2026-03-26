@@ -39,9 +39,7 @@ pipeline {
                 sh """
                     cd playwright-tests
                     export TARGET_URLS="${params.TARGET_URLS}"
-                    npx playwright test \
-                        --reporter=html,junit \
-                        --output=test-results
+                    npx playwright test --reporter=html --output=test-results
                 """
             }
 
